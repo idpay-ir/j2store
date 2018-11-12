@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension version="3.0" type="plugin" method="upgrade" group="j2store">
+    <name>idpay</name>
+    <description>IDPay</description>
+    <author>Developer: JMDMahdi, Publisher: IDPay</author>
+    <authorUrl>http://idpay.ir</authorUrl>
+    <authorEmail>info@idpay.ir</authorEmail>
+    <creationDate>November 2018</creationDate>
+    <copyright>Copyright (C) 2018 IDPay</copyright>
+    <license>http://www.gnu.org/licenses/gpl-2.0.html GPLv2 or later</license>
+    <config>
+        <fields name="params">
+            <fieldset name="basic">
+                <field name="api_key" type="text" size="40" label="API KEY"/>
+                <field name="sandbox" type="list" default="0" label="آزمایشگاه">
+                    <option value="yes">بله</option>
+                    <option value="no">خیر</option>
+                </field>
+                <field name="success_massage" type="text" size="40" label="پیام پرداخت موفق"
+                       description="متن پیامی که می خواهید بعد از پرداخت موفق به کاربر نمایش دهید را وارد کنید. همچنین می توانید از شورت کدهای {order_id} برای نمایش شماره سفارش و {track_id} برای نمایش کد رهگیری آیدی پی استفاده نمایید."
+                       default="پرداخت شما با موفقیت انجام شد. کد رهگیری: {track_id}"/>
+                <field name="failed_massage" type="text" size="40" label="پیام پرداخت ناموفق"
+                       description="متن پیامی که می خواهید بعد از پرداخت ناموفق به کاربر نمایش دهید را وارد کنید. همچنین می توانید از شورت کدهای {order_id} برای نمایش شماره سفارش و {track_id} برای نمایش کد رهگیری آیدی پی استفاده نمایید."
+                       default="پرداخت شما ناموفق بوده است. لطفا مجددا تلاش نمایید یا در صورت بروز اشکال با مدیر سایت تماس بگیرید."/>
+            </fieldset>
+        </fields>
+    </config>
+    <files>
+        <filename plugin="payment_idpay">payment_idpay.php</filename>
+        <folder>payment_idpay</folder>
+    </files>
+</extension>
