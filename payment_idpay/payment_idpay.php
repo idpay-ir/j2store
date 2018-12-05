@@ -111,7 +111,7 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin
 
             if ($http_status != 201 || empty($result) || empty($result->id) || empty($result->link)) {
                 $link = JRoute::_("index.php?option=com_j2store");
-                $app->redirect($link, '<h2>' . sprintf('خطا هنگام ایجاد تراکنش. کد خطا: %s', $http_status) . '</h2>', $msgType = 'Error');
+                $app->redirect($link, '<h2>' . sprintf('خطا هنگام ایجاد تراکنش. وضعیت خطا: %s - کد خطا: %s - پیام خطا: %s', $http_status, $result->error_code, $result->error_message) . '</h2>', $msgType = 'Error');
             }
 
             $vars->idpay = $result->link;
@@ -161,7 +161,7 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin
                     curl_close($ch);
 
                     if ($http_status != 200) {
-                        $msg = sprintf('خطا هنگام بررسی وضعیت تراکنش. کد خطا: %s', $http_status);
+                        $msg = sprintf('خطا هنگام بررسی وضعیت تراکنش. وضعیت خطا: %s - کد خطا: %s - پیغام خطا: %s', $http_status);
                         $link = JRoute::_(JUri::root() . 'index.php/component/virtuemart/cart', false);
                         $app->redirect($link, '<h2>' . $msg . '</h2>', $msgType = 'Error');
                     }
@@ -171,7 +171,7 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin
                     $inquiry_track_id = empty($result->track_id) ? NULL : $result->track_id;
                     $inquiry_amount = empty($result->amount) ? NULL : $result->amount;
 
-                    if (empty($inquiry_status) || empty($inquiry_track_id) || empty($inquiry_amount) || $inquiry_amount != $price || $inquiry_status != 100) {
+                    if (empty($inquiry_status) || empty($inquiry_track_id) || empty($inquiry_amount) || $inquiry_status != 100) {
                         $msg = $this->idpay_get_failed_message($inquiry_track_id, $inquiry_order_id);
                         $link = JRoute::_("index.php?option=com_j2store");
                         $app->redirect($link, '<h2>' . $msg . '</h2>', $msgType = 'Error');
