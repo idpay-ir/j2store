@@ -4,7 +4,7 @@
  *
  * @developer JMDMahdi
  * @publisher IDPay
- * @package VirtueMart
+ * @package J2Store
  * @subpackage payment
  * @copyright (C) 2018 IDPay
  * @license http://www.gnu.org/licenses/gpl-2.0.html GPLv2 or later
@@ -282,17 +282,4 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin
         $html .= $this->_displayArticle();
         return $html;
     }
-
-    function getShippingAddress()
-    {
-
-        $user = JFactory::getUser();
-        $db = JFactory::getDBO();
-
-        $query = "SELECT * FROM #__j2store_addresses WHERE user_id={$user->id}";
-        $db->setQuery($query);
-        return $db->loadObject();
-
-    }
-
 }
