@@ -70,6 +70,20 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin
         $vars->api_key = $this->params->get('api_key', '');
         $vars->sandbox = $this->params->get('sandbox', '');
 
+	    // Customer information
+        $orderinfo = F0FTable::getInstance('Orderinfo', 'J2StoreTable')->getClone();
+	    $orderinfo->load(array('order_id'=> $data['order_id']));
+
+	    $name = $orderinfo->billing_first_name . ' ' . $orderinfo->billing_last_name;
+	    $all_billing = $orderinfo->all_billing;
+	    $all_billing = json_decode($all_billing);
+	    $mail = $all_billing->email->value;
+	    $phone = $orderinfo->billing_phone_2;
+
+	    if (empty($phone)) {
+	        $phone = $orderinfo->billing_phone_1;
+	    }
+
         if ($vars->api_key == null || $vars->api_key == '') {
             $link = JRoute::_(JURI::root() . "index.php?option=com_j2store");
             $app->redirect($link, '<h2>لطفا تنظیمات درگاه idpay را بررسی کنید</h2>', $msgType = 'Error');
@@ -90,12 +104,14 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin
             $data = array(
                 'order_id' => $data['orderpayment_id'],
                 'amount' => $amount,
-                'phone' => '',
+                'name' => $name,
+                'phone' => $phone,
+                'mail' => $mail,
                 'desc' => $desc,
                 'callback' => $callback,
             );
 
-            $ch = curl_init('https://api.idpay.ir/v1/payment');
+            $ch = curl_init('https://api.idpay.ir/v1.1/payment');
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
             curl_setopt($ch, CURLOPT_HTTPHEADER, array(
@@ -135,7 +151,7 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin
                 $pid = $jinput->post->get('id', '', 'STRING');
                 $porder_id = $jinput->post->get('order_id', '', 'STRING');
                 if (!empty($pid) && !empty($porder_id)) {
-					
+
 					$price = $this->params->get('amount', '');
                     $api_key = $this->params->get('api_key', '');
                     $sandbox = $this->params->get('sandbox', '') == 'no' ? 'false' : 'true';
