@@ -178,7 +178,7 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin
 
 		                if ($http_status != 200) {
 			                $msg = sprintf('خطا هنگام بررسی وضعیت تراکنش. وضعیت خطا: %s - کد خطا: %s - پیغام خطا: %s', $http_status);
-			                $link = JRoute::_(JUri::root() . 'index.php/component/virtuemart/cart', false);
+			                $link = JRoute::_(JUri::root() . 'index.php/component/j2store/cart', false);
 			                $app->redirect($link, '<h2>' . $msg . '</h2>', $msgType = 'Error');
 		                }
 
