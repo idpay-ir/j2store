@@ -162,7 +162,7 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin
                     );
 
                     $ch = curl_init();
-                    curl_setopt($ch, CURLOPT_URL, 'https://api.idpay.ir/v1/payment/inquiry');
+                    curl_setopt($ch, CURLOPT_URL, 'https://api.idpay.ir/v1.1/payment/verify');
                     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
                     curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
                     curl_setopt($ch, CURLOPT_HTTPHEADER, array(
@@ -182,18 +182,18 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin
                         $app->redirect($link, '<h2>' . $msg . '</h2>', $msgType = 'Error');
                     }
 
-                    $inquiry_status = empty($result->status) ? NULL : $result->status;
-                    $inquiry_order_id = empty($result->order_id) ? NULL : $result->order_id;
-                    $inquiry_track_id = empty($result->track_id) ? NULL : $result->track_id;
-                    $inquiry_amount = empty($result->amount) ? NULL : $result->amount;
+                    $verify_status = empty($result->status) ? NULL : $result->status;
+                    $verify_order_id = empty($result->order_id) ? NULL : $result->order_id;
+                    $verify_track_id = empty($result->track_id) ? NULL : $result->track_id;
+                    $verify_amount = empty($result->amount) ? NULL : $result->amount;
 
-                    if (empty($inquiry_status) || empty($inquiry_track_id) || empty($inquiry_amount) || $inquiry_status != 100) {
-                        $msg = $this->idpay_get_failed_message($inquiry_track_id, $inquiry_order_id);
+                    if (empty($verify_status) || empty($verify_track_id) || empty($verify_amount) || $verify_status != 100) {
+                        $msg = $this->idpay_get_failed_message($verify_track_id, $verify_order_id);
                         $link = JRoute::_("index.php?option=com_j2store");
                         $app->redirect($link, '<h2>' . $msg . '</h2>', $msgType = 'Error');
                     } else {
-                        $msg = $this->idpay_get_success_message($inquiry_track_id, $inquiry_order_id);
-                        $this->saveStatus($msg, 1, $customer_note, 'ok', $inquiry_track_id, $orderpayment);
+                        $msg = $this->idpay_get_success_message($verify_track_id, $verify_order_id);
+                        $this->saveStatus($msg, 1, $customer_note, 'ok', $verify_track_id, $orderpayment);
                         $app->enqueueMessage($msg, 'message');
                     }
                 } else {
