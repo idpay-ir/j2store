@@ -186,6 +186,7 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin
 		                $verify_order_id = empty($result->order_id) ? NULL : $result->order_id;
 		                $verify_track_id = empty($result->track_id) ? NULL : $result->track_id;
 		                $verify_amount = empty($result->amount) ? NULL : $result->amount;
+		                $verify_card_no = empty($result->payment->card_no) ? NULL : $result->payment->card_no;
 
 		                if (empty($verify_status) || empty($verify_track_id) || empty($verify_amount) || $verify_status < 100) {
 			                $msg = $this->idpay_get_failed_message($verify_track_id, $verify_order_id);
@@ -194,6 +195,8 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin
 		                } else {
 			                $msg = $this->idpay_get_success_message($verify_track_id, $verify_order_id);
 			                $this->saveStatus($msg, 1, $customer_note, 'ok', $verify_track_id, $orderpayment);
+			                $orderpayment->add_history('Remote Status : ' . $verify_status . ' - IDPay Track ID : ' . $verify_track_id . ' - Payer card no: ' . $verify_card_no);
+
 			                $app->enqueueMessage($msg, 'message');
 		                }
 	                }
@@ -261,7 +264,7 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin
             $html .= '<br />';
         }
         $html .= '<br />' . $msg;
-        $orderpayment->customer_note = $customer_note . $html;
+        //$orderpayment->customer_note = $customer_note . $html;
         $payment_status = $this->getPaymentStatus($statCode);
         $orderpayment->transaction_status = $payment_status;
         $orderpayment->order_state = $payment_status;
