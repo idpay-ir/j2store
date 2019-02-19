@@ -142,64 +142,85 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin
         $app = JFactory::getApplication();
         $jinput = $app->input;
         $html = '';
-        $orderpayment_id = $jinput->post->get('order_id', '0', 'INT');
+        // Template variables
+	    $vars = new JObject();
+
+
+	    $jinput->post->get('status');
+
+		$status   = empty( $jinput->post->get('status') ) ? NULL : $jinput->post->get('status');
+		$track_id = empty( $jinput->post->get('track_id' ) ) ? NULL : $jinput->post->get('track_id');
+		$id       = empty( $jinput->post->get('id') ) ? NULL : $jinput->post->get('id');
+		$order_id = empty( $jinput->post->get('order_id') ) ? NULL : $jinput->post->get('order_id');
+		$amount   = empty( $jinput->post->get('amount') ) ? NULL : $jinput->post->get('amount');
+		$card_no  = empty( $jinput->post->get('card_no') ) ? NULL : $jinput->post->get('card_no');
+		$date     = empty( $jinput->post->get('date') ) ? NULL : $jinput->post->get('date');
+        //$orderpayment_id = $jinput->post->get('order_id', '0', 'INT');
         F0FTable::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_j2store/tables');
         $orderpayment = F0FTable::getInstance('Order', 'J2StoreTable')->getClone();
-        if ($orderpayment->load($orderpayment_id)) {
+        if ($orderpayment->load($order_id)) {
             $customer_note = $orderpayment->customer_note;
-            if ($orderpayment->j2store_order_id == $orderpayment_id) {
-                $pid = $jinput->post->get('id', '', 'STRING');
-                $porder_id = $jinput->post->get('order_id', '', 'STRING');
-                if (!empty($pid) && !empty($porder_id)) {
-					if ( $jinput->post->get('status') == 10) {
-		                $price = $this->params->get('amount', '');
-		                $api_key = $this->params->get('api_key', '');
-		                $sandbox = $this->params->get('sandbox', '') == 'no' ? 'false' : 'true';
+            if ($orderpayment->j2store_order_id == $order_id) {
+                //$pid = $jinput->post->get('id', '', 'STRING');
+                //$porder_id = $jinput->post->get('order_id', '', 'STRING');
+                if (!empty($id) && !empty($order_id)) {
 
-		                $data = array(
-			                'id' => $pid,
-			                'order_id' => $porder_id,
-		                );
+                    if ( $status != 10) {
+                        $orderpayment->add_history('Remote Status : ' . $status . ' - IDPay Track ID : ' . $track_id . ' - Payer card no: ' . $card_no);
+                        $vars->onafterpayment_text = $this->idpay_get_failed_message( $track_id, $order_id);
+                        return $this->_getLayout('postpayment', $vars);
+                    }
 
-		                $ch = curl_init();
-		                curl_setopt($ch, CURLOPT_URL, 'https://api.idpay.ir/v1.1/payment/verify');
-		                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-		                curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-		                curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-			                'Content-Type: application/json',
-			                'X-API-KEY:' . $api_key,
-			                'X-SANDBOX:' . $sandbox,
-		                ));
+                    $api_key = $this->params->get('api_key', '');
+                    $sandbox = $this->params->get('sandbox', '') == 'no' ? 'false' : 'true';
 
-		                $result = curl_exec($ch);
-		                $result = json_decode($result);
-		                $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-		                curl_close($ch);
+                    $data = array(
+                        'id' => $id,
+                        'order_id' => $order_id,
+                    );
 
-		                if ($http_status != 200) {
-			                $msg = sprintf('خطا هنگام بررسی وضعیت تراکنش. وضعیت خطا: %s - کد خطا: %s - پیغام خطا: %s', $http_status);
-			                $link = JRoute::_(JUri::root() . 'index.php/component/j2store/cart', false);
-			                $app->redirect($link, '<h2>' . $msg . '</h2>', $msgType = 'Error');
-		                }
+                    $ch = curl_init();
+                    curl_setopt($ch, CURLOPT_URL, 'https://api.idpay.ir/v1.1/payment/verify');
+                    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+                    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+                        'Content-Type: application/json',
+                        'X-API-KEY:' . $api_key,
+                        'X-SANDBOX:' . $sandbox,
+                    ));
 
-		                $verify_status = empty($result->status) ? NULL : $result->status;
-		                $verify_order_id = empty($result->order_id) ? NULL : $result->order_id;
-		                $verify_track_id = empty($result->track_id) ? NULL : $result->track_id;
-		                $verify_amount = empty($result->amount) ? NULL : $result->amount;
-		                $verify_card_no = empty($result->payment->card_no) ? NULL : $result->payment->card_no;
+                    $result = curl_exec($ch);
+                    $result = json_decode($result);
+                    $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                    curl_close($ch);
 
-		                if (empty($verify_status) || empty($verify_track_id) || empty($verify_amount) || $verify_status < 100) {
-			                $msg = $this->idpay_get_failed_message($verify_track_id, $verify_order_id);
-			                $link = JRoute::_("index.php?option=com_j2store");
-			                $app->redirect($link, '<h2>' . $msg . '</h2>', $msgType = 'Error');
-		                } else {
-			                $msg = $this->idpay_get_success_message($verify_track_id, $verify_order_id);
-			                $this->saveStatus($msg, 1, $customer_note, 'ok', $verify_track_id, $orderpayment);
-			                $orderpayment->add_history('Remote Status : ' . $verify_status . ' - IDPay Track ID : ' . $verify_track_id . ' - Payer card no: ' . $verify_card_no);
+                    if ($http_status != 200) {
+                        $msg = sprintf('خطا هنگام بررسی وضعیت تراکنش. وضعیت خطا: %s - کد خطا: %s - پیغام خطا: %s', $http_status, $result->error_code, $result->error_message);
+                        $vars->onafterpayment_text = $msg;
+                        return $this->_getLayout('postpayment', $vars);
+                    }
 
-			                $app->enqueueMessage($msg, 'message');
-		                }
-	                }
+                    $verify_status = empty($result->status) ? NULL : $result->status;
+                    $verify_order_id = empty($result->order_id) ? NULL : $result->order_id;
+                    $verify_track_id = empty($result->track_id) ? NULL : $result->track_id;
+                    $verify_amount = empty($result->amount) ? NULL : $result->amount;
+                    $verify_card_no = empty($result->payment->card_no) ? NULL : $result->payment->card_no;
+
+                    if (empty($verify_status) || empty($verify_track_id) || empty($verify_amount) || $verify_status < 100) {
+
+                        $msg = $this->idpay_get_failed_message($verify_track_id, $verify_order_id);
+                        $orderpayment->add_history('Remote Status : ' . $verify_status . ' - IDPay Track ID : ' . $verify_track_id . ' - Payer card no: ' . $verify_card_no);
+                        $vars->onafterpayment_text = $msg;
+                        return $this->_getLayout('postpayment', $vars);
+                    } else {
+                        $msg = $this->idpay_get_success_message($verify_track_id, $verify_order_id);
+                        $this->saveStatus($msg, 1, $customer_note, 'ok', $verify_track_id, $orderpayment);
+                        $orderpayment->add_history('Remote Status : ' . $verify_status . ' - IDPay Track ID : ' . $verify_track_id . ' - Payer card no: ' . $verify_card_no);
+
+                        $app->enqueueMessage($msg, 'message');
+                    }
+
+
                 } else {
                     $msg = 'کاربر از انجام تراکنش منصرف شده است';
                     $link = JRoute::_("index.php?option=com_j2store");
