@@ -172,11 +172,8 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
                                 ->getClone();
         if ( $orderpayment->load( $order_id ) )
         {
-            $customer_note = $orderpayment->customer_note;
             if ( $orderpayment->j2store_order_id == $order_id )
             {
-                //$pid = $jinput->post->get('id', '', 'STRING');
-                //$porder_id = $jinput->post->get('order_id', '', 'STRING');
                 if ( ! empty( $id ) && ! empty( $order_id ) )
                 {
 
@@ -228,16 +225,17 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
                     if ( empty( $verify_status ) || empty( $verify_track_id ) || empty( $verify_amount ) || $verify_status < 100 )
                     {
 
-                        $msg = $this->idpay_get_failed_message( $verify_track_id, $verify_order_id );
-                        $orderpayment->add_history( 'Remote Status : ' . $verify_status . ' - IDPay Track ID : ' . $verify_track_id . ' - Payer card no: ' . $verify_card_no );
+                        $msg                       = $this->idpay_get_failed_message( $verify_track_id, $verify_order_id );
                         $vars->onafterpayment_text = $msg;
+                        $orderpayment->add_history( 'Remote Status : ' . $verify_status . ' - IDPay Track ID : ' . $verify_track_id . ' - Payer card no: ' . $verify_card_no );
 
                         return $this->_getLayout( 'postpayment', $vars );
                     }
                     else
                     {
+                        // Payment is successful.
                         $msg = $this->idpay_get_success_message( $verify_track_id, $verify_order_id );
-                        $this->saveStatus( $msg, 1, $customer_note, 'ok', $verify_track_id, $orderpayment );
+                        $this->saveStatus( $orderpayment, 1 );
                         $orderpayment->add_history( 'Remote Status : ' . $verify_status . ' - IDPay Track ID : ' . $verify_track_id . ' - Payer card no: ' . $verify_card_no );
 
                         $app->enqueueMessage( $msg, 'message' );
@@ -281,9 +279,9 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
         ], $this->params->get( 'success_massage', '' ) );
     }
 
-    function getPaymentStatus( $payment_status ) {
+    private function getPaymentStatus( $payment_status_code ) {
         $status = '';
-        switch ( $payment_status )
+        switch ( $payment_status_code )
         {
             case '1':
                 $status = JText::_( 'J2STORE_CONFIRMED' );
@@ -308,41 +306,17 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
         return $status;
     }
 
-    function saveStatus( $msg, $statCode, $customer_note, $emptyCart, $trackingCode, $orderpayment ) {
-        $html = '<br />';
-        $html .= '<strong>' . 'idpay' . '</strong>';
-        $html .= '<br />';
-        if ( isset( $trackingCode ) )
-        {
-            $html .= '<br />';
-            $html .= $trackingCode . 'شماره پیگری ';
-            $html .= '<br />';
-        }
-        $html .= '<br />' . $msg;
-        //$orderpayment->customer_note = $customer_note . $html;
-        $payment_status                   = $this->getPaymentStatus( $statCode );
+    private function saveStatus( $orderpayment, $payment_status_code ) {
+
+        $payment_status                   = $this->getPaymentStatus( $payment_status_code );
         $orderpayment->transaction_status = $payment_status;
         $orderpayment->order_state        = $payment_status;
-        $orderpayment->order_state_id     = $this->params->get( 'payment_status', $statCode );
+        $orderpayment->order_state_id     = $this->params->get( 'payment_status', $payment_status_code );
 
         if ( $orderpayment->store() )
         {
-            if ( $emptyCart == 'ok' )
-            {
-                $orderpayment->payment_complete();
-                $orderpayment->empty_cart();
-            }
+            $orderpayment->payment_complete();
+            $orderpayment->empty_cart();
         }
-        else
-        {
-            $errors[] = $orderpayment->getError();
-        }
-
-        $vars                      = new JObject();
-        $vars->onafterpayment_text = $msg;
-        $html                      = $this->_getLayout( 'postpayment', $vars );
-        $html                      .= $this->_displayArticle();
-
-        return $html;
     }
 }
