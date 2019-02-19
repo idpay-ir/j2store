@@ -152,12 +152,6 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
     function _postPayment( $data ) {
         $app    = JFactory::getApplication();
         $jinput = $app->input;
-        $html   = '';
-        // Template variables
-        $vars = new JObject();
-
-
-        $jinput->post->get( 'status' );
 
         $status   = empty( $jinput->post->get( 'status' ) ) ? NULL : $jinput->post->get( 'status' );
         $track_id = empty( $jinput->post->get( 'track_id' ) ) ? NULL : $jinput->post->get( 'track_id' );
@@ -166,7 +160,7 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
         $amount   = empty( $jinput->post->get( 'amount' ) ) ? NULL : $jinput->post->get( 'amount' );
         $card_no  = empty( $jinput->post->get( 'card_no' ) ) ? NULL : $jinput->post->get( 'card_no' );
         $date     = empty( $jinput->post->get( 'date' ) ) ? NULL : $jinput->post->get( 'date' );
-        //$orderpayment_id = $jinput->post->get('order_id', '0', 'INT');
+
         F0FTable::addIncludePath( JPATH_ADMINISTRATOR . '/components/com_j2store/tables' );
         $orderpayment = F0FTable::getInstance( 'Order', 'J2StoreTable' )
                                 ->getClone();
@@ -180,9 +174,9 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
                     if ( $status != 10 )
                     {
                         $orderpayment->add_history( 'Remote Status : ' . $status . ' - IDPay Track ID : ' . $track_id . ' - Payer card no: ' . $card_no );
-                        $vars->onafterpayment_text = $this->idpay_get_failed_message( $track_id, $order_id );
+                        $app->enqueueMessage( $this->idpay_get_failed_message( $track_id, $order_id ), 'Error' );
 
-                        return $this->_getLayout( 'postpayment', $vars );
+                        return;
                     }
 
                     $api_key = $this->params->get( 'api_key', '' );
@@ -210,10 +204,10 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
 
                     if ( $http_status != 200 )
                     {
-                        $msg                       = sprintf( 'خطا هنگام بررسی وضعیت تراکنش. وضعیت خطا: %s - کد خطا: %s - پیغام خطا: %s', $http_status, $result->error_code, $result->error_message );
-                        $vars->onafterpayment_text = $msg;
+                        $msg = sprintf( 'خطا هنگام بررسی وضعیت تراکنش. وضعیت خطا: %s - کد خطا: %s - پیغام خطا: %s', $http_status, $result->error_code, $result->error_message );
+                        $app->enqueueMessage( $msg, 'Error' );
 
-                        return $this->_getLayout( 'postpayment', $vars );
+                        return;
                     }
 
                     $verify_status   = empty( $result->status ) ? NULL : $result->status;
@@ -225,11 +219,11 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
                     if ( empty( $verify_status ) || empty( $verify_track_id ) || empty( $verify_amount ) || $verify_status < 100 )
                     {
 
-                        $msg                       = $this->idpay_get_failed_message( $verify_track_id, $verify_order_id );
-                        $vars->onafterpayment_text = $msg;
+                        $msg = $this->idpay_get_failed_message( $verify_track_id, $verify_order_id );
                         $orderpayment->add_history( 'Remote Status : ' . $verify_status . ' - IDPay Track ID : ' . $verify_track_id . ' - Payer card no: ' . $verify_card_no );
+                        $app->enqueueMessage( $msg, 'Error' );
 
-                        return $this->_getLayout( 'postpayment', $vars );
+                        return;
                     }
                     else
                     {
