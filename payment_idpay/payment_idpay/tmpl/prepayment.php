@@ -15,7 +15,7 @@ defined('_JEXEC') or die('Restricted access');
 ?>
 
 <form action="<?php echo @$vars->idpay; ?>" method="get" name="adminForm" enctype="multipart/form-data">
-	<p><?php echo 'درگاه idpay' ?></p>
+	<p><?php echo 'درگاه IDPay' ?></p>
 	<br />
     <input type="submit" class="j2store_cart_button button btn btn-primary" value="<?php echo JText::_($vars->button_text); ?>" />
 </form>

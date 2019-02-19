@@ -66,7 +66,7 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin
         $vars->orderpayment_amount = $data['orderpayment_amount'];
         $vars->orderpayment_type = $this->_element;
         $vars->button_text = $this->params->get('button_text', 'J2STORE_PLACE_ORDER');
-        $vars->display_name = 'idpay';
+        $vars->display_name = 'IDPay';
         $vars->api_key = $this->params->get('api_key', '');
         $vars->sandbox = $this->params->get('sandbox', '');
 
@@ -86,7 +86,7 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin
 
         if ($vars->api_key == null || $vars->api_key == '') {
             $link = JRoute::_(JURI::root() . "index.php?option=com_j2store");
-            $app->redirect($link, '<h2>لطفا تنظیمات درگاه idpay را بررسی کنید</h2>', $msgType = 'Error');
+            $app->redirect($link, '<h2>لطفا تنظیمات درگاه IDPay را بررسی کنید</h2>', $msgType = 'Error');
         } else {
             $api_key = $vars->api_key;
             $sandbox = $vars->sandbox == 'no' ? 'false' : 'true';

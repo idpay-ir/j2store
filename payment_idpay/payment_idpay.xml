@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension version="3.0" type="plugin" method="upgrade" group="j2store">
-    <name>idpay</name>
-    <description>IDPay</description>
+    <name>IDPay</name>
+    <description>IDPay payment gateway</description>
     <author>Developer: JMDMahdi, Publisher: IDPay</author>
     <authorUrl>http://idpay.ir</authorUrl>
     <authorEmail>info@idpay.ir</authorEmail>
