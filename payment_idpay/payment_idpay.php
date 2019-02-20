@@ -158,8 +158,8 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
 
 
     function _postPayment( $data ) {
-        $app    = JFactory::getApplication();
-        $jinput = $app->input;
+        $app      = JFactory::getApplication();
+        $jinput   = $app->input;
         $status   = empty( $jinput->post->get( 'status' ) ) ? NULL : $jinput->post->get( 'status' );
         $track_id = empty( $jinput->post->get( 'track_id' ) ) ? NULL : $jinput->post->get( 'track_id' );
         $id       = empty( $jinput->post->get( 'id' ) ) ? NULL : $jinput->post->get( 'id' );
@@ -194,8 +194,10 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
             return;
         }
 
-        if($orderpayment->get('transaction_status') == 'Processed' || $orderpayment->get('transaction_status') == 'Confirmed') {
+        if ( $orderpayment->get( 'transaction_status' ) == 'Processed' || $orderpayment->get( 'transaction_status' ) == 'Confirmed' )
+        {
             $app->enqueueMessage( 'وضعیت این تراکنش قبلا در حالت پرداخت شده بوده است.', 'Message' );
+
             return;
         }
 
