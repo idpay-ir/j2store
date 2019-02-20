@@ -206,6 +206,7 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
         {
             $orderpayment->add_history( 'Remote Status : ' . $status . ' - IDPay Track ID : ' . $track_id . ' - Payer card no: ' . $card_no );
             $app->enqueueMessage( $this->idpay_get_failed_message( $track_id, $order_id ), 'Error' );
+            $this->saveStatus( $orderpayment, 3 );
 
             return;
         }
@@ -237,6 +238,7 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
         {
             $msg = sprintf( 'خطا هنگام بررسی وضعیت تراکنش. وضعیت خطا: %s - کد خطا: %s - پیغام خطا: %s', $http_status, $result->error_code, $result->error_message );
             $app->enqueueMessage( $msg, 'Error' );
+            $this->saveStatus( $orderpayment, 3 );
 
             return;
         }
@@ -253,6 +255,7 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
             $msg = $this->idpay_get_failed_message( $verify_track_id, $verify_order_id );
             $orderpayment->add_history( 'Remote Status : ' . $verify_status . ' - IDPay Track ID : ' . $verify_track_id . ' - Payer card no: ' . $verify_card_no );
             $app->enqueueMessage( $msg, 'Error' );
+            $this->saveStatus( $orderpayment, 3 );
 
             return;
         }
@@ -260,7 +263,11 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
         {
             // Payment is successful.
             $msg = $this->idpay_get_success_message( $verify_track_id, $verify_order_id );
-            $this->saveStatus( $orderpayment, 2 );
+            if ( $this->saveStatus( $orderpayment, 2 ) )
+            {
+                $orderpayment->payment_complete();
+                $orderpayment->empty_cart();
+            }
             $orderpayment->add_history( 'Remote Status : ' . $verify_status . ' - IDPay Track ID : ' . $verify_track_id . ' - Payer card no: ' . $verify_card_no );
 
             $app->enqueueMessage( $msg, 'message' );
@@ -319,8 +326,11 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
 
         if ( $orderpayment->store() )
         {
-            $orderpayment->payment_complete();
-            $orderpayment->empty_cart();
+            return TRUE;
+        }
+        else
+        {
+            return FALSE;
         }
     }
 }
