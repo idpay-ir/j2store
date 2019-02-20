@@ -2,10 +2,11 @@
 <extension version="3.0" type="plugin" method="upgrade" group="j2store">
     <name>IDPay</name>
     <description>IDPay payment gateway</description>
+    <version>2.0</version>
     <author>Developer: JMDMahdi, Publisher: IDPay</author>
     <authorUrl>http://idpay.ir</authorUrl>
     <authorEmail>info@idpay.ir</authorEmail>
-    <creationDate>November 2018</creationDate>
+    <creationDate>February 2019</creationDate>
     <copyright>Copyright (C) 2018 IDPay</copyright>
     <license>http://www.gnu.org/licenses/gpl-2.0.html GPLv2 or later</license>
     <config>
