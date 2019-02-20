@@ -1,18 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension version="3.0" type="plugin" method="upgrade" group="j2store">
-    <name>idpay</name>
-    <description>IDPay</description>
+    <name>IDPay</name>
+    <description>IDPay payment gateway</description>
+    <version>2.0</version>
     <author>Developer: JMDMahdi, Publisher: IDPay</author>
     <authorUrl>http://idpay.ir</authorUrl>
     <authorEmail>info@idpay.ir</authorEmail>
-    <creationDate>November 2018</creationDate>
+    <creationDate>February 2019</creationDate>
     <copyright>Copyright (C) 2018 IDPay</copyright>
     <license>http://www.gnu.org/licenses/gpl-2.0.html GPLv2 or later</license>
     <config>
         <fields name="params">
             <fieldset name="basic">
-                <field name="api_key" type="text" size="40" label="API KEY"/>
-                <field name="sandbox" type="list" default="0" label="آزمایشگاه">
+                <field name="api_key" type="text" size="40" label="API KEY"
+                       description="برای دریافت کلید به داشبورد خود در وب‌سایت آیدی پی، بخش وب‌سرویس‌های من مراجعه کنید"/>
+                <field name="sandbox" type="list" default="0" label="آزمایشگاه"
+                       description="اگر گزینه آزمایشگاه را بله انتخاب نمایید، درگاه در حالت تست (سندباکس)‌ کار می‌کند. این گزینه برای شبیه‌سازی پرداخت با آیدی پی به کار می‌رود. در سایت‌های زنده و واقعی، بایستی حالت آزمایشگاه را غیرفعال (گزینه خیر) کنید">
                     <option value="yes">بله</option>
                     <option value="no">خیر</option>
                 </field>
