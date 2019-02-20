@@ -254,7 +254,7 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
         {
             // Payment is successful.
             $msg = $this->idpay_get_success_message( $verify_track_id, $verify_order_id );
-            $this->saveStatus( $orderpayment, 1 );
+            $this->saveStatus( $orderpayment, 2 );
             $orderpayment->add_history( 'Remote Status : ' . $verify_status . ' - IDPay Track ID : ' . $verify_track_id . ' - Payer card no: ' . $verify_card_no );
 
             $app->enqueueMessage( $msg, 'message' );
