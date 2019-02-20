@@ -141,6 +141,14 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
                 $app->redirect( $link, '<h2>' . sprintf( 'خطا هنگام ایجاد تراکنش. وضعیت خطا: %s - کد خطا: %s - پیام خطا: %s', $http_status, $result->error_code, $result->error_message ) . '</h2>', $msgType = 'Error' );
             }
 
+            F0FTable::addIncludePath( JPATH_ADMINISTRATOR . '/components/com_j2store/tables' );
+            $orderpayment = F0FTable::getInstance( 'Order', 'J2StoreTable' )
+                                    ->getClone();
+            // Save transaction id
+            $orderpayment->load( $data['order_id'] );
+            $orderpayment->transaction_id = $result->id;
+            $orderpayment->store();
+
             $vars->idpay = $result->link;
             $html        = $this->_getLayout( 'prepayment', $vars );
 
@@ -164,99 +172,95 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
         F0FTable::addIncludePath( JPATH_ADMINISTRATOR . '/components/com_j2store/tables' );
         $orderpayment = F0FTable::getInstance( 'Order', 'J2StoreTable' )
                                 ->getClone();
-        if ( $orderpayment->load( $order_id ) )
+
+        if ( empty( $id ) || empty( $order_id ) )
         {
-            if ( $orderpayment->j2store_order_id == $order_id )
-            {
-                if ( ! empty( $id ) && ! empty( $order_id ) )
-                {
+            $app->enqueueMessage( 'پارامترهای ورودی خالی است.', 'Error' );
 
-                    if ( $status != 10 )
-                    {
-                        $orderpayment->add_history( 'Remote Status : ' . $status . ' - IDPay Track ID : ' . $track_id . ' - Payer card no: ' . $card_no );
-                        $app->enqueueMessage( $this->idpay_get_failed_message( $track_id, $order_id ), 'Error' );
+            return;
+        }
 
-                        return;
-                    }
+        if ( ! $orderpayment->load( $order_id ) )
+        {
+            $app->enqueueMessage( 'سفارش پیدا نشد.', 'Error' );
 
-                    $api_key = $this->params->get( 'api_key', '' );
-                    $sandbox = $this->params->get( 'sandbox', '' ) == 'no' ? 'false' : 'true';
+            return;
+        }
 
-                    $data = [
-                        'id'       => $id,
-                        'order_id' => $order_id,
-                    ];
+        // Check double spending.
+        if ( $orderpayment->transaction_id != $id )
+        {
+            $app->enqueueMessage( 'پارامترهای ورودی با هم مغایرت دارند.', 'Error' );
 
-                    $ch = curl_init();
-                    curl_setopt( $ch, CURLOPT_URL, 'https://api.idpay.ir/v1.1/payment/verify' );
-                    curl_setopt( $ch, CURLOPT_POSTFIELDS, json_encode( $data ) );
-                    curl_setopt( $ch, CURLOPT_RETURNTRANSFER, TRUE );
-                    curl_setopt( $ch, CURLOPT_HTTPHEADER, [
-                        'Content-Type: application/json',
-                        'X-API-KEY:' . $api_key,
-                        'X-SANDBOX:' . $sandbox,
-                    ] );
-
-                    $result      = curl_exec( $ch );
-                    $result      = json_decode( $result );
-                    $http_status = curl_getinfo( $ch, CURLINFO_HTTP_CODE );
-                    curl_close( $ch );
-
-                    if ( $http_status != 200 )
-                    {
-                        $msg = sprintf( 'خطا هنگام بررسی وضعیت تراکنش. وضعیت خطا: %s - کد خطا: %s - پیغام خطا: %s', $http_status, $result->error_code, $result->error_message );
-                        $app->enqueueMessage( $msg, 'Error' );
-
-                        return;
-                    }
-
-                    $verify_status   = empty( $result->status ) ? NULL : $result->status;
-                    $verify_order_id = empty( $result->order_id ) ? NULL : $result->order_id;
-                    $verify_track_id = empty( $result->track_id ) ? NULL : $result->track_id;
-                    $verify_amount   = empty( $result->amount ) ? NULL : $result->amount;
-                    $verify_card_no  = empty( $result->payment->card_no ) ? NULL : $result->payment->card_no;
-
-                    if ( empty( $verify_status ) || empty( $verify_track_id ) || empty( $verify_amount ) || $verify_status < 100 )
-                    {
-
-                        $msg = $this->idpay_get_failed_message( $verify_track_id, $verify_order_id );
-                        $orderpayment->add_history( 'Remote Status : ' . $verify_status . ' - IDPay Track ID : ' . $verify_track_id . ' - Payer card no: ' . $verify_card_no );
-                        $app->enqueueMessage( $msg, 'Error' );
-
-                        return;
-                    }
-                    else
-                    {
-                        // Payment is successful.
-                        $msg = $this->idpay_get_success_message( $verify_track_id, $verify_order_id );
-                        $this->saveStatus( $orderpayment, 1 );
-                        $orderpayment->add_history( 'Remote Status : ' . $verify_status . ' - IDPay Track ID : ' . $verify_track_id . ' - Payer card no: ' . $verify_card_no );
-
-                        $app->enqueueMessage( $msg, 'message' );
-                    }
+            return;
+        }
 
 
-                }
-                else
-                {
-                    $msg  = 'کاربر از انجام تراکنش منصرف شده است';
-                    $link = JRoute::_( "index.php?option=com_j2store" );
-                    $app->redirect( $link, '<h2>' . $msg . '</h2>', $msgType = 'Error' );
-                }
-            }
-            else
-            {
-                $msg  = 'سفارش پیدا نشد';
-                $link = JRoute::_( "index.php?option=com_j2store" );
-                $app->redirect( $link, '<h2>' . $msg . '</h2>', $msgType = 'Error' );
-            }
+        if ( $status != 10 )
+        {
+            $orderpayment->add_history( 'Remote Status : ' . $status . ' - IDPay Track ID : ' . $track_id . ' - Payer card no: ' . $card_no );
+            $app->enqueueMessage( $this->idpay_get_failed_message( $track_id, $order_id ), 'Error' );
+
+            return;
+        }
+
+        $api_key = $this->params->get( 'api_key', '' );
+        $sandbox = $this->params->get( 'sandbox', '' ) == 'no' ? 'false' : 'true';
+
+        $data = [
+            'id'       => $id,
+            'order_id' => $order_id,
+        ];
+
+        $ch = curl_init();
+        curl_setopt( $ch, CURLOPT_URL, 'https://api.idpay.ir/v1.1/payment/verify' );
+        curl_setopt( $ch, CURLOPT_POSTFIELDS, json_encode( $data ) );
+        curl_setopt( $ch, CURLOPT_RETURNTRANSFER, TRUE );
+        curl_setopt( $ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'X-API-KEY:' . $api_key,
+            'X-SANDBOX:' . $sandbox,
+        ] );
+
+        $result      = curl_exec( $ch );
+        $result      = json_decode( $result );
+        $http_status = curl_getinfo( $ch, CURLINFO_HTTP_CODE );
+        curl_close( $ch );
+
+        if ( $http_status != 200 )
+        {
+            $msg = sprintf( 'خطا هنگام بررسی وضعیت تراکنش. وضعیت خطا: %s - کد خطا: %s - پیغام خطا: %s', $http_status, $result->error_code, $result->error_message );
+            $app->enqueueMessage( $msg, 'Error' );
+
+            return;
+        }
+
+        $verify_status   = empty( $result->status ) ? NULL : $result->status;
+        $verify_order_id = empty( $result->order_id ) ? NULL : $result->order_id;
+        $verify_track_id = empty( $result->track_id ) ? NULL : $result->track_id;
+        $verify_amount   = empty( $result->amount ) ? NULL : $result->amount;
+        $verify_card_no  = empty( $result->payment->card_no ) ? NULL : $result->payment->card_no;
+
+        if ( empty( $verify_status ) || empty( $verify_track_id ) || empty( $verify_amount ) || $verify_status < 100 )
+        {
+
+            $msg = $this->idpay_get_failed_message( $verify_track_id, $verify_order_id );
+            $orderpayment->add_history( 'Remote Status : ' . $verify_status . ' - IDPay Track ID : ' . $verify_track_id . ' - Payer card no: ' . $verify_card_no );
+            $app->enqueueMessage( $msg, 'Error' );
+
+            return;
         }
         else
         {
-            $msg  = 'سفارش پیدا نشد';
-            $link = JRoute::_( "index.php?option=com_j2store" );
-            $app->redirect( $link, '<h2>' . $msg . '</h2>', $msgType = 'Error' );
+            // Payment is successful.
+            $msg = $this->idpay_get_success_message( $verify_track_id, $verify_order_id );
+            $this->saveStatus( $orderpayment, 1 );
+            $orderpayment->add_history( 'Remote Status : ' . $verify_status . ' - IDPay Track ID : ' . $verify_track_id . ' - Payer card no: ' . $verify_card_no );
+
+            $app->enqueueMessage( $msg, 'message' );
         }
+
+
     }
 
     public function idpay_get_failed_message( $track_id, $order_id ) {
