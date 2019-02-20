@@ -201,6 +201,18 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
             return;
         }
 
+        // Save transaction details based on posted data.
+        $payment_details           = new JObject();
+        $payment_details->status   = $status;
+        $payment_details->track_id = $track_id;
+        $payment_details->id       = $id;
+        $payment_details->order_id = $order_id;
+        $payment_details->amount   = $amount;
+        $payment_details->card_no  = $card_no;
+        $payment_details->date     = $date;
+
+        $orderpayment->transaction_details = json_encode( $payment_details );
+        $orderpayment->store();
 
         if ( $status != 10 )
         {
@@ -237,6 +249,10 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
         {
             $msg = sprintf( 'خطا هنگام بررسی وضعیت تراکنش. وضعیت خطا: %s - کد خطا: %s - پیغام خطا: %s', $http_status, $result->error_code, $result->error_message );
             $app->enqueueMessage( $msg, 'Error' );
+            $orderpayment->add_history( $msg );
+            // Set transaction status to 'Failed'
+            $orderpayment->transaction_status = JText::_( 'J2STORE_PROCESSED' );
+            $orderpayment->store();
 
             return;
         }
@@ -253,14 +269,26 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
             $msg = $this->idpay_get_failed_message( $verify_track_id, $verify_order_id );
             $orderpayment->add_history( 'Remote Status : ' . $verify_status . ' - IDPay Track ID : ' . $verify_track_id . ' - Payer card no: ' . $verify_card_no );
             $app->enqueueMessage( $msg, 'Error' );
+            // Update transaction details
+            $orderpayment->transaction_details = json_encode( $result );
+            // Set transaction status to 'Failed'
+            $orderpayment->transaction_status = JText::_( 'J2STORE_FAILED' );
+            $orderpayment->store();
 
             return;
         }
         else
-        {
-            // Payment is successful.
+        { // Payment is successful.
             $msg = $this->idpay_get_success_message( $verify_track_id, $verify_order_id );
-            $this->saveStatus( $orderpayment, 2 );
+            // Update transaction details
+            $orderpayment->transaction_details = json_encode( $result );
+            // Set transaction status to 'PROCESSED'
+            $orderpayment->transaction_status = JText::_( 'J2STORE_PROCESSED' );
+            if ( $orderpayment->store() )
+            {
+                $orderpayment->payment_complete();
+                $orderpayment->empty_cart();
+            }
             $orderpayment->add_history( 'Remote Status : ' . $verify_status . ' - IDPay Track ID : ' . $verify_track_id . ' - Payer card no: ' . $verify_card_no );
 
             $app->enqueueMessage( $msg, 'message' );
@@ -283,44 +311,4 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
         ], $this->params->get( 'success_massage', '' ) );
     }
 
-    private function getPaymentStatus( $payment_status_code ) {
-        $status = '';
-        switch ( $payment_status_code )
-        {
-            case '1':
-                $status = JText::_( 'J2STORE_CONFIRMED' );
-                break;
-            case '2':
-                $status = JText::_( 'J2STORE_PROCESSED' );
-                break;
-            case '3':
-                $status = JText::_( 'J2STORE_FAILED' );
-                break;
-            case '4':
-                $status = JText::_( 'J2STORE_PENDING' );
-                break;
-            case '5':
-                $status = JText::_( 'J2STORE_INCOMPLETE' );
-                break;
-            default:
-                $status = JText::_( 'J2STORE_PENDING' );
-                break;
-        }
-
-        return $status;
-    }
-
-    private function saveStatus( $orderpayment, $payment_status_code ) {
-
-        $payment_status                   = $this->getPaymentStatus( $payment_status_code );
-        $orderpayment->transaction_status = $payment_status;
-        $orderpayment->order_state        = $payment_status;
-        $orderpayment->order_state_id     = $this->params->get( 'payment_status', $payment_status_code );
-
-        if ( $orderpayment->store() )
-        {
-            $orderpayment->payment_complete();
-            $orderpayment->empty_cart();
-        }
-    }
 }
