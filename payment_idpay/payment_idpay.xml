@@ -2,8 +2,8 @@
 <extension version="3.0" type="plugin" method="upgrade" group="j2store">
     <name>IDPay</name>
     <description>IDPay payment gateway</description>
-    <version>2.0.1</version>
-    <author>Developer: JMDMahdi, Publisher: IDPay</author>
+    <version>2.1.0</version>
+    <author>Developer: JMDMahdi, meysamrazmi, vispa, Publisher: IDPay</author>
     <authorUrl>http://idpay.ir</authorUrl>
     <authorEmail>info@idpay.ir</authorEmail>
     <creationDate>February 2019</creationDate>

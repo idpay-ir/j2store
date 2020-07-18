@@ -2,7 +2,7 @@
 /**
  * IDPay payment plugin
  *
- * @developer     JMDMahdi
+ * @developer     JMDMahdi, meysamrazmi, vispa
  * @publisher     IDPay
  * @package       J2Store
  * @subpackage    payment
@@ -62,6 +62,14 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
         }
     }
 
+    /**
+     * Processes the payment form
+     * and returns HTML to be displayed to the user
+     * generally with a success/failed message
+     *
+     * @param $data     array       form post data
+     * @return string   HTML to display
+     */
     function _prePayment( $data ) {
         $app                       = JFactory::getApplication();
         $vars                      = new JObject();
@@ -87,13 +95,23 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
 
         if ( empty( $phone ) )
         {
-            $phone = $orderinfo->billing_phone_1;
+            $phone = !empty( $orderinfo->billing_phone_1 ) ? $orderinfo->billing_phone_1 : '';
         }
+
+        // Load order
+        F0FTable::addIncludePath( JPATH_ADMINISTRATOR . '/components/com_j2store/tables' );
+        $orderpayment = F0FTable::getInstance( 'Order', 'J2StoreTable' )
+                                ->getClone();
+        $orderpayment->load( $data['orderpayment_id'] );
 
         if ( $vars->api_key == NULL || $vars->api_key == '' )
         {
-            $link = JRoute::_( JURI::root() . "index.php?option=com_j2store" );
-            $app->redirect( $link, '<h2>لطفا تنظیمات درگاه IDPay را بررسی کنید</h2>', $msgType = 'Error' );
+            $msg         = "لطفا تنظیمات درگاه IDPay را بررسی کنید.";
+            $vars->error = $msg;
+            $orderpayment->add_history( $msg );
+            $orderpayment->store();
+
+            return $this->_getLayout( 'prepayment', $vars );
         }
         else
         {
@@ -106,9 +124,12 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
 
             if ( empty( $amount ) )
             {
-                $msg  = "واحد پول انتخاب شده پشتیبانی نمی شود.";
-                $link = JRoute::_( "index.php?option=com_j2store" );
-                $app->redirect( $link, '<h2>' . $msg . '</h2>', $msgType = 'Error' );
+                $msg         = "واحد پول انتخاب شده پشتیبانی نمی شود.";
+                $vars->error = $msg;
+                $orderpayment->add_history( $msg );
+                $orderpayment->store();
+
+                return $this->_getLayout( 'prepayment', $vars );
             }
 
             $data = [
@@ -137,25 +158,22 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
 
             if ( $http_status != 201 || empty( $result ) || empty( $result->id ) || empty( $result->link ) )
             {
-                $link = JRoute::_( "index.php?option=com_j2store" );
-                $app->redirect( $link, '<h2>' . sprintf( 'خطا هنگام ایجاد تراکنش. وضعیت خطا: %s - کد خطا: %s - پیام خطا: %s', $http_status, $result->error_code, $result->error_message ) . '</h2>', $msgType = 'Error' );
+                $msg         = sprintf( 'خطا هنگام ایجاد تراکنش. وضعیت خطا: %s - کد خطا: %s - پیام خطا: %s', $http_status, $result->error_code, $result->error_message );
+                $vars->error = $msg;
+                $orderpayment->add_history( $msg );
+                $orderpayment->store();
+
+                return $this->_getLayout( 'prepayment', $vars );
             }
 
-            F0FTable::addIncludePath( JPATH_ADMINISTRATOR . '/components/com_j2store/tables' );
-            $orderpayment = F0FTable::getInstance( 'Order', 'J2StoreTable' )
-                                    ->getClone();
             // Save transaction id
-            $orderpayment->load( $data['order_id'] );
             $orderpayment->transaction_id = $result->id;
             $orderpayment->store();
 
             $vars->idpay = $result->link;
-            $html        = $this->_getLayout( 'prepayment', $vars );
-
-            return $html;
+            return $this->_getLayout( 'prepayment', $vars );
         }
     }
-
 
     function _postPayment( $data ) {
         $app      = JFactory::getApplication();
@@ -216,8 +234,11 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
 
         if ( $status != 10 )
         {
-            $orderpayment->add_history( 'Remote Status : ' . $status . ' - IDPay Track ID : ' . $track_id . ' - Payer card no: ' . $card_no );
-            $app->enqueueMessage( $this->idpay_get_failed_message( $track_id, $order_id ), 'Error' );
+            $orderpayment->add_history( 'Error Code : ' . $status . ' - Error Message : ' . $this->getStatus($status) . ' - IDPay Track ID : ' . $track_id . ' - Payer card no: ' . $card_no );
+            $app->enqueueMessage( $this->idpay_get_filled_message( $track_id, $order_id, 'failed_massage' ), 'Error' );
+            // Set transaction status to 'Failed'
+            $orderpayment->update_status(3);
+            $orderpayment->store();
 
             return;
         }
@@ -251,7 +272,7 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
             $app->enqueueMessage( $msg, 'Error' );
             $orderpayment->add_history( $msg );
             // Set transaction status to 'Failed'
-            $orderpayment->transaction_status = JText::_( 'J2STORE_PROCESSED' );
+            $orderpayment->update_status(3);
             $orderpayment->store();
 
             return;
@@ -263,52 +284,82 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
         $verify_amount   = empty( $result->amount ) ? NULL : $result->amount;
         $verify_card_no  = empty( $result->payment->card_no ) ? NULL : $result->payment->card_no;
 
+        // Update transaction details
+        $orderpayment->transaction_details = json_encode( $result );
+
         if ( empty( $verify_status ) || empty( $verify_track_id ) || empty( $verify_amount ) || $verify_status < 100 )
         {
 
-            $msg = $this->idpay_get_failed_message( $verify_track_id, $verify_order_id );
-            $orderpayment->add_history( 'Remote Status : ' . $verify_status . ' - IDPay Track ID : ' . $verify_track_id . ' - Payer card no: ' . $verify_card_no );
+            $msg = $this->idpay_get_filled_message( $verify_track_id, $verify_order_id, 'failed_massage' );
+            $orderpayment->add_history( 'Error Code : ' . $verify_status . ' - Error Message : ' . $this->getStatus($verify_status) . ' - IDPay Track ID : ' . $verify_track_id . ' - Payer card no: ' . $verify_card_no );
             $app->enqueueMessage( $msg, 'Error' );
-            // Update transaction details
-            $orderpayment->transaction_details = json_encode( $result );
             // Set transaction status to 'Failed'
-            $orderpayment->transaction_status = JText::_( 'J2STORE_FAILED' );
+            $orderpayment->update_status(3);
             $orderpayment->store();
 
             return;
         }
         else
         { // Payment is successful.
-            $msg = $this->idpay_get_success_message( $verify_track_id, $verify_order_id );
-            // Update transaction details
-            $orderpayment->transaction_details = json_encode( $result );
+            $msg = $this->idpay_get_filled_message( $verify_track_id, $verify_order_id, 'success_massage' );
             // Set transaction status to 'PROCESSED'
             $orderpayment->transaction_status = JText::_( 'J2STORE_PROCESSED' );
+            $app->enqueueMessage( $msg, 'message' );
+            $orderpayment->add_history( 'Remote Status : ' . $verify_status . ' - IDPay Track ID : ' . $verify_track_id . ' - Payer card no: ' . $verify_card_no );
+
             if ( $orderpayment->store() )
             {
                 $orderpayment->payment_complete();
                 $orderpayment->empty_cart();
             }
-            $orderpayment->add_history( 'Remote Status : ' . $verify_status . ' - IDPay Track ID : ' . $verify_track_id . ' - Payer card no: ' . $verify_card_no );
-
-            $app->enqueueMessage( $msg, 'message' );
         }
-
-
     }
 
-    public function idpay_get_failed_message( $track_id, $order_id ) {
+    public function idpay_get_filled_message( $track_id, $order_id, $type ) {
         return str_replace( [ "{track_id}", "{order_id}" ], [
             $track_id,
             $order_id,
-        ], $this->params->get( 'failed_massage', '' ) );
+        ], $this->params->get( $type, '' ) );
     }
 
-    public function idpay_get_success_message( $track_id, $order_id ) {
-        return str_replace( [ "{track_id}", "{order_id}" ], [
-            $track_id,
-            $order_id,
-        ], $this->params->get( 'success_massage', '' ) );
+    public function getStatus($status_code){
+        switch ($status_code){
+            case 1:
+                return 'پرداخت انجام نشده است';
+                break;
+            case 2:
+                return 'پرداخت ناموفق بوده است';
+                break;
+            case 3:
+                return 'خطا رخ داده است';
+                break;
+            case 4:
+                return 'بلوکه شده';
+                break;
+            case 5:
+                return 'برگشت به پرداخت کننده';
+                break;
+            case 6:
+                return 'برگشت خورده سیستمی';
+                break;
+            case 7:
+                return 'انصراف از پرداخت';
+                break;
+            case 8:
+                return 'به درگاه پرداخت منتقل شد';
+                break;
+            case 10:
+                return 'در انتظار تایید پرداخت';
+                break;
+            case 100:
+                return 'پرداخت تایید شده است';
+                break;
+            case 101:
+                return 'پرداخت قبلا تایید شده است';
+                break;
+            case 200:
+                return 'به دریافت کننده واریز شد';
+                break;
+        }
     }
-
 }
