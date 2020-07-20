@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension version="3.0" type="plugin" method="upgrade" group="j2store">
-    <name>IDPay</name>
-    <description>IDPay payment gateway</description>
+    <name>PLG_J2STORE_IDPAY_NAME</name>
+    <description>PLG_J2STORE_IDPAY_DESC</description>
     <version>2.1.0</version>
     <author>Developer: JMDMahdi, meysamrazmi, vispa, Publisher: IDPay</author>
     <authorUrl>http://idpay.ir</authorUrl>
@@ -12,19 +12,22 @@
     <config>
         <fields name="params">
             <fieldset name="basic">
-                <field name="api_key" type="text" size="40" label="API KEY"
-                       description="برای دریافت کلید به داشبورد خود در وب‌سایت آیدی پی، بخش وب‌سرویس‌های من مراجعه کنید"/>
-                <field name="sandbox" type="list" default="0" label="آزمایشگاه"
-                       description="اگر گزینه آزمایشگاه را بله انتخاب نمایید، درگاه در حالت تست (سندباکس)‌ کار می‌کند. این گزینه برای شبیه‌سازی پرداخت با آیدی پی به کار می‌رود. در سایت‌های زنده و واقعی، بایستی حالت آزمایشگاه را غیرفعال (گزینه خیر) کنید">
-                    <option value="yes">بله</option>
-                    <option value="no">خیر</option>
+                <field name="api_key" type="text" size="60" label="API KEY" description="PLG_J2STORE_IDPAY_API_KEY_DESC"/>
+                <field name="sandbox" type="list" default="0" label="PLG_J2STORE_IDPAY_SANDBOX_LABEL" description="PLG_J2STORE_IDPAY_SANDBOX_DESC">
+                    <option value="yes">PLG_J2STORE_IDPAY_YES</option>
+                    <option value="no">PLG_J2STORE_IDPAY_NO</option>
                 </field>
-                <field name="success_massage" type="text" size="40" label="پیام پرداخت موفق"
-                       description="متن پیامی که می خواهید بعد از پرداخت موفق به کاربر نمایش دهید را وارد کنید. همچنین می توانید از شورت کدهای {order_id} برای نمایش شماره سفارش و {track_id} برای نمایش کد رهگیری آیدی پی استفاده نمایید."
+                <field name="currency" type="radio" default="rial" label="PLG_J2STORE_IDPAY_CURRENCY_LABEL" class="btn-group" description="PLG_J2STORE_IDPAY_CURRENCY_DESC">
+                    <option value="rial">PLG_J2STORE_IDPAY_CURRENCY_RIAL</option>
+                    <option value="toman">PLG_J2STORE_IDPAY_CURRENCY_TOMAN</option>
+                </field>
+                <field name="success_massage" type="textarea" rows="4" label="PLG_J2STORE_IDPAY_SUCCESS_MESSAGE_LABEL"
+                       description="PLG_J2STORE_IDPAY_HELP_MESSAGE"
                        default="پرداخت شما با موفقیت انجام شد. کد رهگیری: {track_id}"/>
-                <field name="failed_massage" type="text" size="40" label="پیام پرداخت ناموفق"
-                       description="متن پیامی که می خواهید بعد از پرداخت ناموفق به کاربر نمایش دهید را وارد کنید. همچنین می توانید از شورت کدهای {order_id} برای نمایش شماره سفارش و {track_id} برای نمایش کد رهگیری آیدی پی استفاده نمایید."
+                <field name="failed_massage" type="textarea" rows="4" label="PLG_J2STORE_IDPAY_ERROR_MESSAGE_LABEL"
+                       description="PLG_J2STORE_IDPAY_HELP_MESSAGE"
                        default="پرداخت شما ناموفق بوده است. لطفا مجددا تلاش نمایید یا در صورت بروز اشکال با مدیر سایت تماس بگیرید."/>
+                <field name="help" type="spacer" label="PLG_J2STORE_IDPAY_HELP_MESSAGE"/>
             </fieldset>
         </fields>
     </config>
@@ -32,4 +35,12 @@
         <filename plugin="payment_idpay">payment_idpay.php</filename>
         <folder>payment_idpay</folder>
     </files>
+    <languages folder="language/fa-IR">
+        <language tag="fa-IR">fa-IR.plg_system_payment_idpay.ini</language>
+        <language tag="fa-IR">fa-IR.plg_system_payment_idpay.sys.ini</language>
+    </languages>
+    <languages folder="language/en-GB">
+        <language tag="en-GB">en-GB.plg_system_payment_idpay.ini</language>
+        <language tag="en-GB">en-GB.plg_system_payment_idpay.sys.ini</language>
+    </languages>
 </extension>
