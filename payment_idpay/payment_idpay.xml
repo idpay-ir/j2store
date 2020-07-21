@@ -31,6 +31,11 @@
             </fieldset>
         </fields>
     </config>
+
+    <updateservers>
+        <server type="extension" priority="1" name="System - IDPay for J2Store">https://static.idpay.ir/plugins/joomla/j2store-idpay-udpate.xml</server>
+    </updateservers>
+
     <files>
         <filename plugin="payment_idpay">payment_idpay.php</filename>
         <folder>payment_idpay</folder>
