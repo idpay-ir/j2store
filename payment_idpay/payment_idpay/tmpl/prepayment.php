@@ -18,7 +18,7 @@ defined( '_JEXEC' ) or die( 'Restricted access' );
       enctype="multipart/form-data">
     <p>
         <img src="/plugins/j2store/payment_idpay/payment_idpay/logo.svg" style="display: inline-block;vertical-align: middle;width: 70px;">
-        <?php echo 'درگاه IDPay' ?>
+        <?php echo JRoute::_("PLG_J2STORE_IDPAY_OPTION_NAME"); ?>
     </p>
     <br/>
     <?php if(!empty(@$vars->error)): ?>
