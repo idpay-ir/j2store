@@ -2,7 +2,7 @@
 /**
  * IDPay payment plugin
  *
- * @developer     JMDMahdi
+ * @developer     JMDMahdi, meysamrazmi, vispa
  * @publisher     IDPay
  * @package       J2Store
  * @subpackage    payment
@@ -17,13 +17,11 @@ require_once( JPATH_ADMINISTRATOR . '/components/com_j2store/library/plugins/pay
 
 class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
 
-    var $_element = 'payment_idpay';
-
     function __construct( & $subject, $config ) {
         parent::__construct( $subject, $config );
         $this->loadLanguage( 'com_j2store', JPATH_ADMINISTRATOR );
+        $this->loadLanguage('plg_system_payment_idpay', JPATH_ADMINISTRATOR);
     }
-
 
     function onJ2StoreCalculateFees( $order ) {
         $payment_method = $order->get_payment_method();
@@ -62,6 +60,14 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
         }
     }
 
+    /**
+     * Processes the payment form
+     * and returns HTML to be displayed to the user
+     * generally with a success/failed message
+     *
+     * @param $data     array       form post data
+     * @return string   HTML to display
+     */
     function _prePayment( $data ) {
         $app                       = JFactory::getApplication();
         $vars                      = new JObject();
@@ -70,7 +76,7 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
         $vars->orderpayment_amount = $data['orderpayment_amount'];
         $vars->orderpayment_type   = $this->_element;
         $vars->button_text         = $this->params->get( 'button_text', 'J2STORE_PLACE_ORDER' );
-        $vars->display_name        = 'IDPay';
+        $vars->display_name        = $this->translate( 'PLG_J2STORE_IDPAY_NAME' );
         $vars->api_key             = $this->params->get( 'api_key', '' );
         $vars->sandbox             = $this->params->get( 'sandbox', '' );
 
@@ -87,13 +93,23 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
 
         if ( empty( $phone ) )
         {
-            $phone = $orderinfo->billing_phone_1;
+            $phone = !empty( $orderinfo->billing_phone_1 ) ? $orderinfo->billing_phone_1 : '';
         }
+
+        // Load order
+        F0FTable::addIncludePath( JPATH_ADMINISTRATOR . '/components/com_j2store/tables' );
+        $orderpayment = F0FTable::getInstance( 'Order', 'J2StoreTable' )
+                                ->getClone();
+        $orderpayment->load( $data['orderpayment_id'] );
 
         if ( $vars->api_key == NULL || $vars->api_key == '' )
         {
-            $link = JRoute::_( JURI::root() . "index.php?option=com_j2store" );
-            $app->redirect( $link, '<h2>لطفا تنظیمات درگاه IDPay را بررسی کنید</h2>', $msgType = 'Error' );
+            $msg         = $this->translate('PLG_J2STORE_IDPAY_ERROR_CONFIG');
+            $vars->error = $msg;
+            $orderpayment->add_history( $msg );
+            $orderpayment->store();
+
+            return $this->_getLayout( 'prepayment', $vars );
         }
         else
         {
@@ -101,14 +117,17 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
             $sandbox = $vars->sandbox == 'no' ? 'false' : 'true';
 
             $amount   = round( $vars->orderpayment_amount, 0 );
-            $desc     = 'پرداخت سفارش شماره: ' . $vars->order_id;
+            $desc     = $this->translate('PLG_J2STORE_IDPAY_PARAMS_DESC') . $vars->order_id;
             $callback = JRoute::_( JURI::root() . "index.php?option=com_j2store&view=checkout" ) . '&orderpayment_type=' . $vars->orderpayment_type . '&task=confirmPayment';
 
             if ( empty( $amount ) )
             {
-                $msg  = "واحد پول انتخاب شده پشتیبانی نمی شود.";
-                $link = JRoute::_( "index.php?option=com_j2store" );
-                $app->redirect( $link, '<h2>' . $msg . '</h2>', $msgType = 'Error' );
+                $msg         = $this->translate('PLG_J2STORE_IDPAY_ERROR_PRICE');
+                $vars->error = $msg;
+                $orderpayment->add_history( $msg );
+                $orderpayment->store();
+
+                return $this->_getLayout( 'prepayment', $vars );
             }
 
             $data = [
@@ -137,25 +156,22 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
 
             if ( $http_status != 201 || empty( $result ) || empty( $result->id ) || empty( $result->link ) )
             {
-                $link = JRoute::_( "index.php?option=com_j2store" );
-                $app->redirect( $link, '<h2>' . sprintf( 'خطا هنگام ایجاد تراکنش. وضعیت خطا: %s - کد خطا: %s - پیام خطا: %s', $http_status, $result->error_code, $result->error_message ) . '</h2>', $msgType = 'Error' );
+                $msg         = sprintf( $this->translate('PLG_J2STORE_IDPAY_ERROR_PAYMENT'), $http_status, $result->error_code, $result->error_message );
+                $vars->error = $msg;
+                $orderpayment->add_history( $msg );
+                $orderpayment->store();
+
+                return $this->_getLayout( 'prepayment', $vars );
             }
 
-            F0FTable::addIncludePath( JPATH_ADMINISTRATOR . '/components/com_j2store/tables' );
-            $orderpayment = F0FTable::getInstance( 'Order', 'J2StoreTable' )
-                                    ->getClone();
             // Save transaction id
-            $orderpayment->load( $data['order_id'] );
             $orderpayment->transaction_id = $result->id;
             $orderpayment->store();
 
             $vars->idpay = $result->link;
-            $html        = $this->_getLayout( 'prepayment', $vars );
-
-            return $html;
+            return $this->_getLayout( 'prepayment', $vars );
         }
     }
-
 
     function _postPayment( $data ) {
         $app      = JFactory::getApplication();
@@ -174,14 +190,14 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
 
         if ( empty( $id ) || empty( $order_id ) )
         {
-            $app->enqueueMessage( 'پارامترهای ورودی خالی است.', 'Error' );
+            $app->enqueueMessage( $this->translate('PLG_J2STORE_IDPAY_ERROR_EMPTY_PARAMS'), 'Error' );
 
             return;
         }
 
         if ( ! $orderpayment->load( $order_id ) )
         {
-            $app->enqueueMessage( 'سفارش پیدا نشد.', 'Error' );
+            $app->enqueueMessage( $this->translate('PLG_J2STORE_IDPAY_ERROR_NOT_FOUND'), 'Error' );
 
             return;
         }
@@ -189,14 +205,14 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
         // Check double spending.
         if ( $orderpayment->transaction_id != $id )
         {
-            $app->enqueueMessage( 'پارامترهای ورودی با هم مغایرت دارند.', 'Error' );
+            $app->enqueueMessage( $this->translate('PLG_J2STORE_IDPAY_ERROR_WRONG_PARAMS'), 'Error' );
 
             return;
         }
 
         if ( $orderpayment->get( 'transaction_status' ) == 'Processed' || $orderpayment->get( 'transaction_status' ) == 'Confirmed' )
         {
-            $app->enqueueMessage( 'وضعیت این تراکنش قبلا در حالت پرداخت شده بوده است.', 'Message' );
+            $app->enqueueMessage( $this->translate('PLG_J2STORE_IDPAY_ERROR_ALREADY_COMPLETED'), 'Message' );
 
             return;
         }
@@ -216,8 +232,11 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
 
         if ( $status != 10 )
         {
-            $orderpayment->add_history( 'Remote Status : ' . $status . ' - IDPay Track ID : ' . $track_id . ' - Payer card no: ' . $card_no );
-            $app->enqueueMessage( $this->idpay_get_failed_message( $track_id, $order_id ), 'Error' );
+            $orderpayment->add_history( sprintf( $this->translate('PLG_J2STORE_IDPAY_ERROR_FAILED'), $this->translate('CODE_' . $status), $status, $track_id ) );
+            $app->enqueueMessage( $this->idpay_get_filled_message( $track_id, $order_id, 'failed_massage' ), 'Error' );
+            // Set transaction status to 'Failed'
+            $orderpayment->update_status(3);
+            $orderpayment->store();
 
             return;
         }
@@ -247,11 +266,11 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
 
         if ( $http_status != 200 )
         {
-            $msg = sprintf( 'خطا هنگام بررسی وضعیت تراکنش. وضعیت خطا: %s - کد خطا: %s - پیغام خطا: %s', $http_status, $result->error_code, $result->error_message );
+            $msg = sprintf( $this->translate('PLG_J2STORE_IDPAY_ERROR_FAILED_VERIFY'), $http_status, $result->error_code, $result->error_message );
             $app->enqueueMessage( $msg, 'Error' );
             $orderpayment->add_history( $msg );
             // Set transaction status to 'Failed'
-            $orderpayment->transaction_status = JText::_( 'J2STORE_PROCESSED' );
+            $orderpayment->update_status(3);
             $orderpayment->store();
 
             return;
@@ -263,52 +282,51 @@ class plgJ2StorePayment_idpay extends J2StorePaymentPlugin {
         $verify_amount   = empty( $result->amount ) ? NULL : $result->amount;
         $verify_card_no  = empty( $result->payment->card_no ) ? NULL : $result->payment->card_no;
 
+        // Update transaction details
+        $orderpayment->transaction_details = json_encode( $result );
+
         if ( empty( $verify_status ) || empty( $verify_track_id ) || empty( $verify_amount ) || $verify_status < 100 )
         {
 
-            $msg = $this->idpay_get_failed_message( $verify_track_id, $verify_order_id );
-            $orderpayment->add_history( 'Remote Status : ' . $verify_status . ' - IDPay Track ID : ' . $verify_track_id . ' - Payer card no: ' . $verify_card_no );
+            $msg = $this->idpay_get_filled_message( $verify_track_id, $verify_order_id, 'failed_massage' );
+            $orderpayment->add_history( sprintf( $this->translate('PLG_J2STORE_IDPAY_ERROR_FAILED'), $this->translate('CODE_' . $verify_status), $verify_status, $verify_track_id ) );
             $app->enqueueMessage( $msg, 'Error' );
-            // Update transaction details
-            $orderpayment->transaction_details = json_encode( $result );
             // Set transaction status to 'Failed'
-            $orderpayment->transaction_status = JText::_( 'J2STORE_FAILED' );
+            $orderpayment->update_status(3);
             $orderpayment->store();
 
             return;
         }
         else
         { // Payment is successful.
-            $msg = $this->idpay_get_success_message( $verify_track_id, $verify_order_id );
-            // Update transaction details
-            $orderpayment->transaction_details = json_encode( $result );
+            $msg = $this->idpay_get_filled_message( $verify_track_id, $verify_order_id, 'success_massage' );
             // Set transaction status to 'PROCESSED'
             $orderpayment->transaction_status = JText::_( 'J2STORE_PROCESSED' );
+            $app->enqueueMessage( $msg, 'message' );
+            $orderpayment->add_history( $msg );
+
             if ( $orderpayment->store() )
             {
                 $orderpayment->payment_complete();
                 $orderpayment->empty_cart();
             }
-            $orderpayment->add_history( 'Remote Status : ' . $verify_status . ' - IDPay Track ID : ' . $verify_track_id . ' - Payer card no: ' . $verify_card_no );
-
-            $app->enqueueMessage( $msg, 'message' );
         }
-
-
     }
 
-    public function idpay_get_failed_message( $track_id, $order_id ) {
+    public function idpay_get_filled_message( $track_id, $order_id, $type ) {
         return str_replace( [ "{track_id}", "{order_id}" ], [
             $track_id,
             $order_id,
-        ], $this->params->get( 'failed_massage', '' ) );
+        ], $this->params->get( $type, '' ) );
     }
 
-    public function idpay_get_success_message( $track_id, $order_id ) {
-        return str_replace( [ "{track_id}", "{order_id}" ], [
-            $track_id,
-            $order_id,
-        ], $this->params->get( 'success_massage', '' ) );
+    /**
+     * translate plugin language files
+     * @param $key
+     * @return mixed
+     */
+    protected function translate($key)
+    {
+        return JText::_('PLG_J2STORE_IDPAY_' . strtoupper($key));
     }
-
 }
