@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension version="3.0" type="plugin" method="upgrade" group="j2store">
-    <name>PLG_J2STORE_IDPAY_NAME</name>
+    <name>PLG_J2STORE_PLG_IDPAY_NAME</name>
     <description>PLG_J2STORE_IDPAY_DESC</description>
     <version>2.1.0</version>
     <author>Developer: JMDMahdi, meysamrazmi, vispa, Publisher: IDPay</author>
-    <authorUrl>http://idpay.ir</authorUrl>
+    <authorUrl>https://idpay.ir</authorUrl>
     <authorEmail>info@idpay.ir</authorEmail>
     <creationDate>February 2019</creationDate>
-    <copyright>Copyright (C) 2018 IDPay</copyright>
+    <copyright>Copyright (C) 2020 IDPay</copyright>
     <license>http://www.gnu.org/licenses/gpl-2.0.html GPLv2 or later</license>
     <config>
         <fields name="params">
@@ -33,7 +33,7 @@
     </config>
 
     <updateservers>
-        <server type="extension" priority="1" name="System - IDPay for J2Store">https://static.idpay.ir/plugins/joomla/j2store-idpay-udpate.xml</server>
+        <server type="extension" priority="1" name="J2Store - IDPay for J2Store">https://static.idpay.ir/plugins/joomla/j2store-idpay-udpate.xml</server>
     </updateservers>
 
     <files>
