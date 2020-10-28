@@ -33,7 +33,7 @@
     </config>
 
     <updateservers>
-        <server type="extension" priority="1" name="J2Store - IDPay for J2Store">https://static.idpay.ir/plugins/joomla/j2store-idpay-udpate.xml</server>
+        <server type="extension" priority="1" name="J2Store - IDPay for J2Store">https://static.idpay.ir/plugins/joomla/j2store-idpay-update.xml</server>
     </updateservers>
 
     <files>
