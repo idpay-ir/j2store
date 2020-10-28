@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension version="3.0" type="plugin" method="upgrade" group="j2store">
-    <name>PLG_J2STORE_PLG_IDPAY_NAME</name>
+    <name>J2Store - IDPay for J2Store</name>
     <description>PLG_J2STORE_IDPAY_DESC</description>
-    <version>2.1.0</version>
+    <version>2.1.1</version>
     <author>Developer: JMDMahdi, meysamrazmi, vispa, Publisher: IDPay</author>
     <authorUrl>https://idpay.ir</authorUrl>
     <authorEmail>info@idpay.ir</authorEmail>
@@ -14,8 +14,8 @@
             <fieldset name="basic">
                 <field name="api_key" type="text" size="60" label="API KEY" description="PLG_J2STORE_IDPAY_API_KEY_DESC"/>
                 <field name="sandbox" type="list" default="0" label="PLG_J2STORE_IDPAY_SANDBOX_LABEL" description="PLG_J2STORE_IDPAY_SANDBOX_DESC">
-                    <option value="yes">PLG_J2STORE_IDPAY_YES</option>
-                    <option value="no">PLG_J2STORE_IDPAY_NO</option>
+                    <option value="yes">YES</option>
+                    <option value="no">NO</option>
                 </field>
                 <field name="currency" type="radio" default="rial" label="PLG_J2STORE_IDPAY_CURRENCY_LABEL" class="btn-group" description="PLG_J2STORE_IDPAY_CURRENCY_DESC">
                     <option value="rial">PLG_J2STORE_IDPAY_CURRENCY_RIAL</option>
@@ -33,7 +33,7 @@
     </config>
 
     <updateservers>
-        <server type="extension" priority="1" name="J2Store - IDPay for J2Store">https://static.idpay.ir/plugins/joomla/j2store-idpay-udpate.xml</server>
+        <server type="extension" priority="1" name="J2Store - IDPay for J2Store">https://static.idpay.ir/plugins/joomla/j2store-idpay-update.xml</server>
     </updateservers>
 
     <files>

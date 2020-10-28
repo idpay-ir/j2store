@@ -4,12 +4,12 @@
  *
  * @developer     JMDMahdi, meysamrazmi, vispa
  * @publisher     IDPay
- * @package       VirtueMart
+ * @package       J2Store
  * @subpackage    payment
- * @copyright (C) 2018 IDPay
+ * @copyright (C) 2020 IDPay
  * @license       http://www.gnu.org/licenses/gpl-2.0.html GPLv2 or later
  *
- * http://idpay.ir
+ * https://idpay.ir
  */
 defined( '_JEXEC' ) or die( 'Restricted access' );
 ?>
@@ -18,7 +18,7 @@ defined( '_JEXEC' ) or die( 'Restricted access' );
       enctype="multipart/form-data">
     <p>
         <img src="/plugins/j2store/payment_idpay/payment_idpay/logo.svg" style="display: inline-block;vertical-align: middle;width: 70px;">
-        <?php echo JRoute::_("PLG_J2STORE_IDPAY_OPTION_NAME"); ?>
+        <?php echo JText::_("PLG_J2STORE_IDPAY_OPTION_NAME"); ?>
     </p>
     <br/>
     <?php if(!empty(@$vars->error)): ?>
