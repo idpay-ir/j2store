@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension version="3.0" type="plugin" method="upgrade" group="j2store">
-    <name>J2Store - IDPay for J2Store</name>
+    <name>IDPay for J2Store</name>
     <description>PLG_J2STORE_IDPAY_DESC</description>
     <version>2.1.1</version>
     <author>Developer: JMDMahdi, meysamrazmi, vispa, Publisher: IDPay</author>
